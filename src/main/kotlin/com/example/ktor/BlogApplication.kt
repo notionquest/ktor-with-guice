@@ -8,9 +8,11 @@ import com.google.inject.Guice
 import com.google.inject.Injector
 import freemarker.cache.ClassTemplateLoader
 import io.ktor.application.*
+import io.ktor.features.ContentNegotiation
 import io.ktor.freemarker.FreeMarker
 import io.ktor.freemarker.FreeMarkerContent
 import io.ktor.http.ContentType
+import io.ktor.jackson.JacksonConverter
 import io.ktor.response.respond
 import io.ktor.response.respondText
 import io.ktor.routing.get
@@ -28,6 +30,9 @@ val ApplicationCall.injector: Injector get() = attributes[InjectorKey]
 fun main(args: Array<String>) {
 
     embeddedServer(Netty, 8080) {
+        install(ContentNegotiation) {
+            register(ContentType.Application.Json, JacksonConverter())
+        }
         // Create main injector
         val injector = Guice.createInjector(HelloModule(), MainModule(this))
 
@@ -54,6 +59,10 @@ fun main(args: Array<String>) {
             get ("/helloguice"){
                 val user = User(call.injector.getInstance(HelloService::class.java).getMessage(), "helloemail@example.com")
                 call.respond(FreeMarkerContent("home.ftl", mapOf("user" to user)))
+            }
+            get("/user") {
+                val user = User("Hello World!", "helloemail@example.com")
+                call.respond(user)
             }
         }
     }.start(wait = true)
